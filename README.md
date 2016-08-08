@@ -7,8 +7,8 @@ _________________________
 
 #Vistas
 
-* ![Pictorico]()
-* ![Ultima vista]()
+* ![Pictorico](https://raw.githubusercontent.com/jalmx89/Smart-Switch/master/Gabinete%20y%20Pictorico/pictorico.png)
+* ![Ultima vista](https://raw.githubusercontent.com/jalmx89/Smart-Switch/master/Fotos/2014-06-30%2012.34.35.jpg)
 
 _________________________
 
