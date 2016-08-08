@@ -2,7 +2,7 @@
 ================================
 Sistema inteligente para control de encendido de luces en interiores por medio de un switch touch o con un sensor PIR. Desarrollado con un PIC12F508
 
-Informaciín detalla del desarrollo esta en [documentación](documentacion/Smart_Switch)
+Informaciín detalla del desarrollo esta en [documentación](https://github.com/jalmx89/Smart-Switch/blob/master/documentacion/Smart_Switch.pdf)
 _________________________
 
 #Vistas
