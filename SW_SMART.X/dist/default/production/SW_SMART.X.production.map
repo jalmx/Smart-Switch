@@ -1,0 +1,102 @@
+MPLINK 5.01, LINKER
+Linker Map File - Created Thu Aug 07 13:27:49 2014
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x00013a
+                   .org_1       code   0x0001c8    program   0x000048
+                   .cinit    romdata   0x0001ec    program   0x000004
+.config_0FFF_BUILD/DEFAULT/PRODUCTION/SW-SMAR       code   0x000fff    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x00009c      
+                            0x0001c8    0x0001ed      
+                            0x000fff    0x000fff      
+            196 out of 517 program addresses used, program memory utilization is 37%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                    APAGA   0x00001a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                   APAGAR   0x00001d    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                  Delay_0   0x000039    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0E   0x00006a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0G   0x00007a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0V   0x000049    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0W   0x000059    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0X   0x000098    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0Z   0x00008a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                  Delay_1   0x000033    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1E   0x000064    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1G   0x000074    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1V   0x000043    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1W   0x000053    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1X   0x000096    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1Z   0x000084    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                  Delay_2   0x000031    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2E   0x000062    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2G   0x000072    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2V   0x000041    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2W   0x000051    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2Z   0x000082    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 ENCENDER   0x000018    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                   INICIO   0x000001    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                     MAIN   0x000007    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                      OFF   0x000021    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                   OFF_LP   0x00002a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                  OFF_PIR   0x000023    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                    PIR_L   0x00000c    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                  PRE_PIR   0x000027    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                   REBOTE   0x000094    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                     SW_L   0x000012    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                    TIME0   0x00002f    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                    TIME1   0x000060    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                   INICIO   0x000001    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                     MAIN   0x000007    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                    PIR_L   0x00000c    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                     SW_L   0x000012    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                 ENCENDER   0x000018    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                    APAGA   0x00001a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                   APAGAR   0x00001d    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                      OFF   0x000021    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                  OFF_PIR   0x000023    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                  PRE_PIR   0x000027    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                   OFF_LP   0x00002a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\SW-SMART.asm
+                    TIME0   0x00002f    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                  Delay_2   0x000031    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                  Delay_1   0x000033    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                  Delay_0   0x000039    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2V   0x000041    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1V   0x000043    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0V   0x000049    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2W   0x000051    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1W   0x000053    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0W   0x000059    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                    TIME1   0x000060    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2E   0x000062    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1E   0x000064    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0E   0x00006a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2G   0x000072    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1G   0x000074    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0G   0x00007a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_2Z   0x000082    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1Z   0x000084    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0Z   0x00008a    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                   REBOTE   0x000094    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_1X   0x000096    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+                 Delay_0X   0x000098    program     static D:\Doc\V\Pic\12F508\SW_SMART.X\CINCO_MINUTOS.INC
+
+

@@ -1,0 +1,471 @@
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ;SW-SMART.asm
+                      00002 ;***********************************************SMART SWITCH********************************************
+                            *******************
+                      00003 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;FILOSOFIA DE OPERACION:;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            ;;;;;;;;;;;;;;;;;
+                      00004 ;EL SENSOR PIR (GPIO 0) DETECTARA PRESENCIA EN EL CUARTO,  SI LA HAY, EL MICROCONTROLADOR VERIFICARA LA 
+                            CANTIDAD DE LUZ EN
+                      00005 ;EL CUARTO, CENSADA POR LA LDR (GPIO 1) EN CASO QUE EXISTA POCA LUZ MANDARA UN NIVEL ALTO Y ENCENDERÁ LA
+                             LÁMPARA (GPIO 4)
+                      00006 ;LA CUAL ESTARÁ CONTROLADA POR UN RELEVADOR. EN CASO DE QUE EXISTA SUFICIENTE ILUMINACIÓN EN LA HABITACI
+                            ÓN NO ENCENDERÁ
+                      00007 ;LA LÁMPARA Y, VOLVERÁ A VERIFICAR LOS SENSORES DE PRESENCIA (PIR) Y DE LUZ (LDR).
+                      00008 ;SI SE DESEA MANIPULAR LA CARGA SIN IMPORTAR EL ESTADO DE LOS SENSORES; EXISTIRÁ SWITCH ÓPTICO (GPIO 3) 
+                            SIENDO
+                      00009 ;UN EMISOR Y RECEPTOR INFRARROJO; EL CUAL AL PASAR LA MANO POR ÉL DEBERÁ MANDAR NIVEL ALTO, CHECARA SI L
+                            A LÁMPARA
+                      00010 ;ESTÁ ENCENDIDA O APAGADA, EN CASO DE QUE  ESTE LA APAGARA LA ENCENDERÁ Y EN CASO CONTRARIO LA APAGARA; 
+                            EN CASO
+                      00011 ;DE HABERLA ACTIVADO LA CARGA ESPERARA 5 MIN PARA DESACTIVARLA, CUANDO TERMINE EL TIEMPO ESTABLECIDO VER
+                            IFICARA  LOS
+                      00012 ;SENSORES Y ACTUARA EN FUNCIÓN DE LO CENSADO.
+                      00013 ;
+                      00014 ;EL CICLADO PRINCIPAL SERÁ VERIFICANDO EL ESTADO DEL SENSOR PIR Y EL SWITCH ÓPTICO. HASTA QUE ALGUNO DE 
+                            LOS
+                      00015 ;DOS CAMBIE DE ESTADO ACTIVARA LA CARGA.
+                      00016 ;
+                      00017 ;EL SENSOR DE LUZ (LDR) DEBE APUNTAR A LUGAR OPUESTO AL FOCO, ENFOCAR DE PREFERENCIA A LA VENTANA. PARA 
+                            EVITAR
+                      00018 ;SWITCHEOS EN FALSO. CONTARÁ CON UN POTENCIÓMETRO PARA AJUSTAR LA SENSIBILIDAD DE LA LUZ.
+                      00019 ;
+                      00020 ;MIENTRAS ESTE ACTIVADA LA CARGA, SE PUEDE DESACTIVAR EN EL MOMENTO QUE UNO LO DESEE PERO EN CASO QUE EX
+                            ISTA
+                      00021 ;PRESENCIA NO PODRÁ DESACTIVARLA HASTA QUE CAMBIE ÉSTE ESTADO.
+                      00022 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            ;;;;;;;;;;;;;;;;;
+                      00023 
+                      00024         LIST p = 12F508
+                      00025         #INCLUDE "p12F508.inc"
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC12F508 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2014 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00157         LIST
+                      00026 
+                      00027 ; CONFIG
+                      00028 ; __config 0xFFEE
+0FFF   0FEA           00029  __CONFIG _OSC_IntRC & _WDT_OFF & _CP_OFF & _MCLRE_OFF
+                      00030 
+                      00031 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00032     CBLOCK 0X08
+                      00033     ENDC
+                      00034 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00035 ;CONFIGURO DE ESTA FOMA LAS ENTRADAS Y SALIDAS, PENSANDO A FUTURO GPIO4 Y 5 COMO COMUNICACION CON OTROS 
+                            DISPOSITIVOS
+                      00036 ;POR MEDIO DE COMUNICACION SERIAL
+                      00037 
+                      00038 #DEFINE LP  GPIO,0      ;LA SALIDA AL CONTROL DE LAMP -> RELAY
+                      00039 #DEFINE PIR GPIO,1      ;LA ENTRADA DEL SENSOR PIR              :1 = PRESENCIA, 0 = NADIE
+                      00040 #DEFINE LDR GPIO,2      ;LA ENTRADA DEL SENSOR DE LUZ -> LDR    :1 = LUZ        0 = POCA LUZ O SIN SUFIC
+                            IENTE LUMINOSIDAD
+                      00041 #DEFINE SW  GPIO,3      ;LA ENTRADA DEL SENSOR SW INFRARROJO    :1 = PULSADO,   0 = SIN PULSAR
+                      00042 ;#DEFINE RX  GPIO,4      ;RECIBO DE DATOS   -> FUTURO
+                      00043 ;#DEFINE TX  GPIO,5      ;ENVIO DE DATOS    -> FUTURO
+                      00044 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00045 ;;;;;;;;;;;;; INICIO DEL PROGRAMA
+                      00046         ORG 0
+0000   0A??           00047         GOTO    INICIO
+                      00048 
+0001                  00049 INICIO:
+0001   0025           00050         MOVWF   OSCCAL  ;CONFIGURO OSCILADOR INTERNO A 4Mhz
+0002   0CDF           00051         MOVLW   H'DF'   ;CARGO CONFIGURACION DEL OPTION
+0003   0002           00052                 OPTION                  ;ACTIVO COMO GP2 COMO I/O, TENDRA RESET INTERNO
+0004   0CFE           00053                 MOVLW   H'FE'   ;CONFIGURAR ENTRADAS Y SALIDAS DEL uC
+0005   0006           00054                 TRIS    GPIO    ;CONFIGURO EL PUERTO DE I/O
+0006   0066           00055                 CLRF    GPIO    ;LIMPIO EL PUERTO, APAGO LA LAMPARA
+                      00056 
+                      00057 ;;;;;;;;;;;;;; PROGRAMA PRINCIPAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0007                  00058 MAIN:
+0007   0626           00059         BTFSC   PIR     ;PREGUNTO SI EL SENSOR PIR DECTECTO PRESENCIA
+0008   0A??           00060         GOTO    PIR_L
+0009   0666           00061         BTFSC   SW      ;PREGUNTO SI FUE ACTIVADO EL SW
+000A   0A??           00062         GOTO    SW_L
+000B   0A??           00063         GOTO    MAIN    ;REGRESO A PREGUNTAR SI HA CAMBIADO ALGUNO
+                      00064 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            ;;;;;;
+000C                  00065 PIR_L:;;PROCESAMIENTO DEL SENSOR PIR Y LDR
+000C   0666           00066         BTFSC   SW      ;EN CASO DE QUE HAYA PRESENCIA Y SUFICIENTE LUZ, ENCEDERA LA LAMPARA
+000D   0A??           00067         GOTO    SW_L    ;ENCENDERA LA LAMPARA
+                      00068 
+000E   0646           00069         BTFSC   LDR     ;VERIFICO SI HAY POCA LUZ EN LA HABITACION
+000F   0A??           00070         GOTO    MAIN    ;SI HAY SUFICIENTE LUZ REGRESA A VERIFICAR EL STATUS DE LOS SENSORES
+0010   0506           00071         BSF     LP      ;SI HAY POCA LUZ ENCIENDE LA LAMPARA
+0011   0A??           00072         GOTO    TIME0   ;TIEMPO DE ESPERA DE 5 MIN
+                      00073 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0012   09??           00074 SW_L:   CALL    REBOTE  ;TIEMPO DE ESPARA POR TRANSITORIO QUE SE PUEDA PRODUCIR
+0013   0666           00075         BTFSC   SW      ;SI SIGUE TOCANDO EL BOTON TOUCH, REALIZA EL ENCENDIDO O APAGADO
+0014   0A??           00076         GOTO    SW_L    ;REGRESA AL MAIN A SEGUIR PREGUNTANDO
+                      00077 
+0015   0606           00078         BTFSC   LP       ;ESTA APAGADA LA LAMPARA?
+0016   0A??           00079         GOTO    APAGAR  ;APAGA LAMPARA SI VA PRESIONADO MAS DE UNA VEZ
+0017   0A??           00080         GOTO    ENCENDER;VA A ENCENDER LA LAMPARA
+                      00081 
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00082 ;;;;;;;;;;;;;;;;;;;;;;;;;; SENCCION DEL SW INFRARROJO ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            ;;;;;;;
+0018                  00083 ENCENDER:
+0018   0506           00084         BSF     LP      ;ENCIENDE LA LAMPARA
+0019   0A??           00085         GOTO    TIME1   ;COMIENZA EL CONTEO DE LOS 5 MIN
+                      00086 
+001A                  00087 APAGA:; ; CUANDO ESTA EL TIEMPO PARA EL APAGADO DE LA LAMPARA PERO SE PRESIONA EL SW ANTES DE QUE TERMIN
+                            E EL TIEMPO, LLEGA AQUI
+001A   09??           00088         CALL    REBOTE
+001B   0666           00089         BTFSC   SW
+001C   0A??           00090         GOTO    APAGA
+                      00091 
+001D                  00092 APAGAR:; ; APAGADO NORMAL DEL SW DESPUES DE SUS 5 MINUTOS
+001D   0626           00093         BTFSC   PIR     ;NO HAY PRESENCIA EN LA HABITACION?
+001E   0646           00094         BTFSC   LDR     ;HAY SUFICIENTE LUZ?
+001F   0A??           00095         GOTO    OFF     ;APAGA LA LAMPARA
+0020   0A??           00096         GOTO    TIME0   ;COMO EXISTE PRESENCIA Y POCA LUZ,REINICIA EL TIEMPO DE ESPERA DE 5 MIN Y MANTIE
+                            NE ENCENDIDA LA LAMPARA
+0021   0406           00097 OFF:    BCF     LP      ;APAGA LAMPARA
+0022   0A??           00098         GOTO    MAIN    ;REGRESA AL MAIN
+                      00099 
+                      00100 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;SECCION DEL SENSOR PIR;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            ;;;;;;;
+0023                  00101 OFF_PIR:
+0023   0626           00102         BTFSC   PIR     ;NO HAY PRESENCIA, CONFIRMA QUE NO HAYA PRESENCIA EN EL CUARTO
+0024   0A??           00103         GOTO    PRE_PIR ;REINICIA LOS 5 MIN, VERIFICADNO LA LUZ DEL CUARTO
+0025   0406           00104         BCF     LP      ;APAGA LAMPARA
+0026   0A??           00105         GOTO    MAIN    ;REGRESA A PREGUNTAR AL SW Y AL PIR
+                      00106 
+0027                  00107 PRE_PIR:
+0027   0646           00108         BTFSC   LDR     ;NO HAY SUFICIENTE ILUMINACION?                                           
+0028   0A??           00109         GOTO    OFF_LP  ;SI HAY SUFICIENTE LUZ APAGARA EL FOCO              
+0029   0A??           00110         GOTO    TIME0   ;CUENTA LOS CINCO MINUTOS DE NUEVO                 
+                      00111 
+002A                  00112 OFF_LP:
+002A   09??           00113         CALL    REBOTE  ;CUIDA EL REBOTE DE LA OSCILACION DE LA LUZ
+002B   0746           00114         BTFSS   LDR     ;SI HAY LUZ BRINCA Y APAGA
+002C   0A??           00115         GOTO    TIME0   ;NO HAY LUZ, ENTONCES COMIENZA A CONTAR LOS 5 MIN
+002D   0406           00116         BCF     LP      ;APAGA LAMPARA
+002E   0A??           00117         GOTO    MAIN    ;REGRESA AL PROGRAMA PRINCIPAL
+                      00118 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00119         #INCLUDE "CINCO_MINUTOS.INC";RETARDOS DE CINCO MINUTOS
+                      00001 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CINCO_MINUTOS.INC;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00002 ;RETARDOS DE 5 MINUTOS APROXIMADAMENTE EN EL CUAL SE MANTIENE ENCENDIDA LA LAMPARA DE LA HABITACION
+                      00003 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00004 
+                      00005     CBLOCK
+  00000008            00006     time0           ;REGISTROS PARA LOS RETARDOS
+  00000009            00007     time1
+  0000000A            00008     time2
+  0000000B            00009     time3
+                      00010     ENDC
+                      00011 
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+002F                  00012 TIME0:;;PIR, CARGA EL TIEMPO DE ESPERA QUE ESTE ENCENDIDA LA LAMPARA
+                      00013         ;TIEMPO DE 5 MINNUTOS APROXIMADAMENTE
+002F   0CF4           00014         movlw   h'f4'   ;carga valor para el tiempo deseado/ Delay_main
+0030   002A           00015         movwf   time2   ;0x0A <-- es una posicion por default, adaptar a su programa
+0031   0C9B           00016 Delay_2 movlw   h'9b'   ;carga valor para el tiempo deseado
+0032   0029           00017         movwf   time1   ;0x09 <-- es una posicion por default, adaptar a su programa
+0033   0CDB           00018 Delay_1 movlw   h'db'   ;carga valor para el tiempo deseado
+0034   0028           00019         movwf   time0   ;0x08 <-- es una posicion por default, adaptar a su programa
+0035   0666           00020        BTFSC   SW
+0036   0A??           00021        GOTO    APAGA
+0037   0626           00022         BTFSC   PIR     ;EN EL PROCESO DEL DECREMETO DEL TIEMPO, EXISTE PRENSENCIA RESETA EL TIEMPO
+0038   0A??           00023         GOTO    TIME0   ;Y VUELVE A COMENZARDE NUEVO
+0039   02E8           00024 Delay_0 decfsz  time0,f ;decremnta y espera a que termine
+003A   0A??           00025         goto    Delay_0 ;regresa a Delay_0
+003B   02E9           00026         decfsz  time1,f ;decrementa time1
+003C   0A??           00027         goto    Delay_1 ;regresa a Delay_1
+003D   02EA           00028         decfsz  time2,f ;decrementa time1
+003E   0A??           00029         goto    Delay_2 ;regresa a Delay_1
+                      00030 
+003F   0CF4           00031         movlw   h'f4'   ;carga valor para el tiempo deseado/ Delay_main
+0040   002A           00032         movwf   time2   ;0x0A <-- es una posicion por default, adaptar a su programa
+0041   0C9B           00033 Delay_2V        movlw   h'9b'   ;carga valor para el tiempo deseado
+0042   0029           00034         movwf   time1   ;0x09 <-- es una posicion por default, adaptar a su programa
+0043   0CDB           00035 Delay_1V        movlw   h'db'   ;carga valor para el tiempo deseado
+0044   0028           00036         movwf   time0   ;0x08 <-- es una posicion por default, adaptar a su programa
+0045   0666           00037         BTFSC   SW
+0046   0A??           00038         GOTO    APAGA
+0047   0626           00039         BTFSC   PIR     ;EN EL PROCESO DEL DECREMETO DEL TIEMPO, EXISTE PRENSENCIA RESETA EL TIEMPO
+0048   0A??           00040         GOTO    TIME0   ;Y VUELVE A COMENZARDE NUEVO
+0049   02E8           00041 Delay_0V        decfsz  time0,f ;decremnta y espera a que termine
+004A   0A??           00042         goto    Delay_0V        ;regresa a Delay_0
+004B   02E9           00043         decfsz  time1,f ;decrementa time1
+004C   0A??           00044         goto    Delay_1V        ;regresa a Delay_1
+004D   02EA           00045         decfsz  time2,f ;decrementa time1
+004E   0A??           00046         goto    Delay_2V        ;regresa a Delay_1
+                      00047 
+004F   0CF4           00048         movlw   h'f4'   ;carga valor para el tiempo deseado/ Delay_main
+0050   002A           00049         movwf   time2   ;0x0A <-- es una posicion por default, adaptar a su programa
+0051   0C9B           00050 Delay_2W        movlw   h'9b'   ;carga valor para el tiempo deseado
+0052   0029           00051         movwf   time1   ;0x09 <-- es una posicion por default, adaptar a su programa
+0053   0CDB           00052 Delay_1W        movlw   h'db'   ;carga valor para el tiempo deseado
+0054   0028           00053         movwf   time0   ;0x08 <-- es una posicion por default, adaptar a su programa
+0055   0666           00054         BTFSC   SW
+0056   0A??           00055         GOTO    APAGA
+0057   0626           00056         BTFSC   PIR     ;EN EL PROCESO DEL DECREMETO DEL TIEMPO, EXISTE PRENSENCIA RESETA EL TIEMPO
+0058   0A??           00057         GOTO    TIME0   ;Y VUELVE A COMENZARDE NUEVO
+0059   02E8           00058 Delay_0W        decfsz  time0,f ;decremnta y espera a que termine
+005A   0A??           00059         goto    Delay_0W        ;regresa a Delay_0
+005B   02E9           00060         decfsz  time1,f ;decrementa time1
+005C   0A??           00061         goto    Delay_1W        ;regresa a Delay_1
+005D   02EA           00062         decfsz  time2,f ;decrementa time1
+005E   0A??           00063         goto    Delay_2W        ;regresa a Delay_1
+                      00064 
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+005F   0A??           00065         GOTO    OFF_PIR ;TERMINADO ESOS 5 MIN VERIFICARA AL SENSOR PIR Y DEPENDIENDO DEL
+                      00066                         ;RESULATADO APAGA O MANTIENE LA LAMPARA ENCENDIDA
+                      00067 
+                      00068 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00069 
+0060                  00070 TIME1:; ; TIEMPO DEL SW-INFRARROJO
+                      00071         ;TIEMPO DE 5 MINNUTOS APROXIMADAMENTE
+0060   0CF4           00072                 movlw   h'f4'   ;carga valor para el tiempo deseado/ Delay_main
+0061   002A           00073         movwf   time2   ;0x0A <-- es una posicion por default, adaptar a su programa
+0062   0C9B           00074 Delay_2E        movlw   h'9b'   ;carga valor para el tiempo deseado
+0063   0029           00075         movwf   time1   ;0x09 <-- es una posicion por default, adaptar a su programa
+0064   0CDB           00076 Delay_1E        movlw   h'db'   ;carga valor para el tiempo deseado
+0065   0028           00077         movwf   time0   ;0x08 <-- es una posicion por default, adaptar a su programa
+0066   0666           00078         BTFSC   SW
+0067   0A??           00079         GOTO    APAGA
+0068   0626           00080         BTFSC   PIR     ;EN EL PROCESO DEL DECREMETO DEL TIEMPO, EXISTE PRENSENCIA RESETA EL TIEMPO
+0069   0A??           00081         GOTO    TIME1   ;Y VUELVE A COMENZARDE NUEVO
+006A   02E8           00082 Delay_0E        decfsz  time0,f ;decremnta y espera a que termine
+006B   0A??           00083         goto    Delay_0E        ;regresa a Delay_0
+006C   02E9           00084         decfsz  time1,f ;decrementa time1
+006D   0A??           00085         goto    Delay_1E        ;regresa a Delay_1
+006E   02EA           00086         decfsz  time2,f ;decrementa time1
+006F   0A??           00087         goto    Delay_2E        ;regresa a Delay_1
+                      00088 
+0070   0CF4           00089         movlw   h'f4'   ;carga valor para el tiempo deseado/ Delay_main
+0071   002A           00090         movwf   time2   ;0x0A <-- es una posicion por default, adaptar a su programa
+0072   0C9B           00091 Delay_2G        movlw   h'9b'   ;carga valor para el tiempo deseado
+0073   0029           00092         movwf   time1   ;0x09 <-- es una posicion por default, adaptar a su programa
+0074   0CDB           00093 Delay_1G        movlw   h'db'   ;carga valor para el tiempo deseado
+0075   0028           00094         movwf   time0   ;0x08 <-- es una posicion por default, adaptar a su programa
+0076   0666           00095         BTFSC   SW
+0077   0A??           00096         GOTO    APAGA
+0078   0626           00097         BTFSC   PIR     ;EN EL PROCESO DEL DECREMETO DEL TIEMPO, EXISTE PRENSENCIA RESETA EL TIEMPO
+0079   0A??           00098         GOTO    TIME1   ;Y VUELVE A COMENZARDE NUEVO
+007A   02E8           00099 Delay_0G        decfsz  time0,f ;decremnta y espera a que termine
+007B   0A??           00100         goto    Delay_0G        ;regresa a Delay_0
+007C   02E9           00101         decfsz  time1,f ;decrementa time1
+007D   0A??           00102         goto    Delay_1G        ;regresa a Delay_1
+007E   02EA           00103         decfsz  time2,f ;decrementa time1
+007F   0A??           00104         goto    Delay_2G        ;regresa a Delay_1
+                      00105 
+0080   0CF4           00106         movlw   h'f4'   ;carga valor para el tiempo deseado/ Delay_main
+0081   002A           00107         movwf   time2   ;0x0A <-- es una posicion por default, adaptar a su programa
+0082   0C9B           00108 Delay_2Z        movlw   h'9b'   ;carga valor para el tiempo deseado
+0083   0029           00109         movwf   time1   ;0x09 <-- es una posicion por default, adaptar a su programa
+0084   0CDB           00110 Delay_1Z        movlw   h'db'   ;carga valor para el tiempo deseado
+0085   0028           00111         movwf   time0   ;0x08 <-- es una posicion por default, adaptar a su programa
+0086   0666           00112         BTFSC   SW
+0087   0A??           00113         GOTO    APAGA
+0088   0626           00114         BTFSC   PIR     ;EN EL PROCESO DEL DECREMETO DEL TIEMPO, EXISTE PRENSENCIA RESETA EL TIEMPO
+0089   0A??           00115         GOTO    TIME1   ;Y VUELVE A COMENZARDE NUEVO
+008A   02E8           00116 Delay_0Z        decfsz  time0,f ;decremnta y espera a que termine
+008B   0A??           00117         goto    Delay_0Z        ;regresa a Delay_0
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+008C   02E9           00118         decfsz  time1,f ;decrementa time1
+008D   0A??           00119         goto    Delay_1Z        ;regresa a Delay_1
+008E   02EA           00120         decfsz  time2,f ;decrementa time1
+008F   0A??           00121         goto    Delay_2Z        ;regresa a Delay_1
+                      00122 
+0090   0626           00123         BTFSC   PIR     ;VERIFICA ANTES DE APAGAR QUE NO HAYA PRESENCIA EN EL CUARTO
+0091   0A??           00124         GOTO    OFF_PIR ;COMO HAY PRESENCIA VERIFICA LA LUZ Y MANTIENE LA LAMPARA ENCENDIDA
+0092   0406           00125         BCF     LP      ;APAGA LA LAMPARA PORQUE NO HAY PRESENCIA EN EL CUARTO
+0093   0A??           00126         GOTO    MAIN    ;VERIFICARA EL SW OPTICO Y EL SENSOR PIR
+                      00127 ;*******************************************************************************************************
+                            **
+0094                  00128 REBOTE:;;TIEMPO DE ESPERA POR REBOTES Y ASEGURARSE QUE FUE PRESIONADO DE 20 MS
+0094   0C63           00129         movlw   h'63'   ;carga valor para el tiempo deseado/ Delay_main
+0095   0029           00130         movwf   time1   ;0x08 <-- es una posicion por default, adaptar a su programa
+0096   0C42           00131 Delay_1X movlw  h'42'   ;carga valor para el tiempo deseado
+0097   0028           00132         movwf   time0   ;0x09 <-- es una posicion por default, adaptar a su programa
+0098   02E8           00133 Delay_0X decfsz time0,f ;decremnta y espera a que termine
+0099   0A??           00134         goto    Delay_0X        ;regresa a Delay_0
+009A   02E9           00135         decfsz  time1,f ;decrementa time1
+009B   0A??           00136         goto    Delay_1X        ;regresa a Delay_1
+Warning[227]: Substituting RETLW 0 for RETURN pseudo-op
+009C   0800           00137         RETURN
+                      00138 ;*******************************************************************************************************
+                            ***
+                      00120 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00121         ORG 0X1C8
+01C8   0853 0857 0849 00122         DT  "SWITCH SMART V1.0"
+       0854 0843 0848 
+       0820 0853 084D 
+       0841 0852 0854 
+       0820 0856 0831 
+       082E 0830 
+01D9   084A 084F 0853 00123         DT  "JOSEF COMPANY - IXO"
+       0845 0846 0820 
+       0843 084F 084D 
+       0850 0841 084E 
+       0859 0820 082D 
+       0820 0849 0858 
+       084F 
+                      00124 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0FEA                  00125         END
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+APAGA                             0000001A
+APAGAR                            0000001D
+C                                 00000000
+CAL0                              00000001
+CAL1                              00000002
+CAL2                              00000003
+CAL3                              00000004
+CAL4                              00000005
+CAL5                              00000006
+CAL6                              00000007
+DC                                00000001
+Delay_0                           00000039
+Delay_0E                          0000006A
+Delay_0G                          0000007A
+Delay_0V                          00000049
+Delay_0W                          00000059
+Delay_0X                          00000098
+Delay_0Z                          0000008A
+Delay_1                           00000033
+Delay_1E                          00000064
+Delay_1G                          00000074
+Delay_1V                          00000043
+Delay_1W                          00000053
+Delay_1X                          00000096
+Delay_1Z                          00000084
+Delay_2                           00000031
+Delay_2E                          00000062
+Delay_2G                          00000072
+Delay_2V                          00000041
+Delay_2W                          00000051
+Delay_2Z                          00000082
+ENCENDER                          00000018
+F                                 00000001
+FSR                               00000004
+GP0                               00000000
+GP1                               00000001
+GP2                               00000002
+GP3                               00000003
+GP4                               00000004
+GP5                               00000005
+GPIO                              00000006
+GPWUF                             00000007
+INDF                              00000000
+INICIO                            00000001
+LDR                               GPIO,2
+LP                                GPIO,0
+MAIN                              00000007
+NOT_GPPU                          00000006
+NOT_GPWU                          00000007
+NOT_PD                            00000003
+NOT_TO                            00000004
+OFF                               00000021
+OFF_LP                            0000002A
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+OFF_PIR                           00000023
+OSCCAL                            00000005
+PA0                               00000005
+PCL                               00000002
+PIR                               GPIO,1
+PIR_L                             0000000C
+PRE_PIR                           00000027
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+REBOTE                            00000094
+STATUS                            00000003
+SW                                GPIO,3
+SW_L                              00000012
+T0CS                              00000005
+T0SE                              00000004
+TIME0                             0000002F
+TIME1                             00000060
+TMR0                              00000001
+TRISIO0                           00000000
+TRISIO1                           00000001
+TRISIO2                           00000002
+TRISIO3                           00000003
+TRISIO4                           00000004
+TRISIO5                           00000005
+W                                 00000000
+Z                                 00000002
+_CONFIG                           00000FFF
+_CP_OFF                           00000FFF
+_CP_ON                            00000FF7
+_ExtRC_OSC                        00000FFF
+_IDLOC0                           00000200
+_IDLOC1                           00000201
+_IDLOC2                           00000202
+_IDLOC3                           00000203
+_IntRC_OSC                        00000FFE
+_LP_OSC                           00000FFC
+_MCLRE_OFF                        00000FEF
+_MCLRE_ON                         00000FFF
+_OSC_ExtRC                        00000FFF
+_OSC_IntRC                        00000FFE
+_OSC_LP                           00000FFC
+_OSC_XT                           00000FFD
+_WDT_OFF                          00000FFB
+_WDT_ON                           00000FFF
+_XT_OSC                           00000FFD
+__12F508                          00000001
+time0                             00000008
+time1                             00000009
+time2                             0000000A
+time3                             0000000B
+
+MPASM 5.55                      SW-SMART.ASM   8-7-2014  13:27:47         PAGE  9
+
+
+
+
+
+Errors   :     0
+Warnings :     1 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+
